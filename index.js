@@ -17,4 +17,4 @@ mongoose.connect(process.env.MONGO_URI, {
 
 app.listen(PORT, () => console.log(` Serveur lancé sur le port ${PORT}`));
 
-app.use('/api', userRoutes);
+app.use('/api', userRoutes); 
