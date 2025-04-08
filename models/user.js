@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -6,15 +7,26 @@ const userSchema = new mongoose.Schema({
   prenom: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  confirmPassword: { type: String }, // En clair, pour correspondre à votre structure actuelle
+  confirmPassword: { type: String, required: true },
   telephone: { type: String, required: true },
   adresse: { type: String, required: true },
   dateCreation: { type: String, required: true },
   isArchived: { type: Boolean, default: false },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-  termsAccepted: { type: Boolean, required: true, default: false }, // Acceptation des conditions
-  termsAcceptedAt: { type: Date, default: Date.now },
-  termsVersion: { type: String, required: true },
+  termsAccepted: { type: Boolean, default: false },
+  termsAcceptedAt: { type: Date },
+  termsVersion: { type: String, default: '1.0' },
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
 });
+
+// Suppression du middleware qui hache le mot de passe
+// userSchema.pre('save', async function (next) {
+//   if (this.isModified('password')) {
+//     this.password = await bcrypt.hash(this.password, 10);
+//     this.confirmPassword = this.password;
+//   }
+//   next();
+// });
 
 module.exports = mongoose.model('User', userSchema);
