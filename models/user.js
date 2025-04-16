@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date },
 });
 
+
+module.exports = mongoose.model('User', userSchema);
+
 // Suppression du middleware qui hache le mot de passe
 // userSchema.pre('save', async function (next) {
 //   if (this.isModified('password')) {
@@ -28,5 +31,3 @@ const userSchema = new mongoose.Schema({
 //   }
 //   next();
 // });
-
-module.exports = mongoose.model('User', userSchema);
