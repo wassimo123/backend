@@ -50,6 +50,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+
+// Récupérer tous les établissements actifs par type
+router.get('/type/:type', async (req, res) => {
+  try {
+    const etablissements = await Etablissement.find({ 
+      type: req.params.type, 
+      statut: "Actif" 
+    });
+
+    if (!etablissements || etablissements.length === 0) {
+      return res.status(404).json({ message: 'Aucun établissement actif trouvé pour ce type' });
+    }
+
+    res.json(etablissements);
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
+  }
+});
+
 router.get('/hotels', async (req, res) => {
 try{
   const hotels = await Etablissement.find({type: 'Hôtel' , statut: 'Actif'});
@@ -70,7 +89,7 @@ try{
 });*/
 
 // Récupérer un établissement par ID
-router.get('/:id', async (req, res) => {
+router.get('/id/:id', async (req, res) => {
   try {
     const etablissement = await Etablissement.findById(req.params.id);
     if(etablissement.statut !="Actif"){

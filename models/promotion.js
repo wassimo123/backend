@@ -7,7 +7,7 @@ const promotionSchema = new mongoose.Schema({
     trim: true
   },
   establishmentId: {
-    type: Number,
+    type: String,
     required: true
   },
   discount: {

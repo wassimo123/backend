@@ -1,0 +1,22 @@
+const mongoose = require('mongoose');
+
+const evenementSchema = new mongoose.Schema({
+  nom: { type: String, required: true, trim: true },
+  date: { type: Date, required: true },
+  heureDebut: { type: String, required: true },
+  heureFin: { type: String },
+  lieu: { type: String, required: true },
+  ville: { type: String, required: true },
+  capacite: { type: Number, required: true },
+  participants: { type: Number, default: 0 },
+  categorie: { type: String, required: true },
+  organisateur: { type: String },
+  description: { type: String },
+  estPublic: { type: Boolean, default: true },
+  statut: { type: String, enum: ['À venir', 'En cours', 'Terminé'], required: true },
+  typeEtablissement: { type: String, required: true },
+  establishmentId: { type: String, required: true },
+  photos: [{ type: String }]
+}, { timestamps: true });
+
+module.exports = mongoose.model('Evenement', evenementSchema);

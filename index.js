@@ -7,6 +7,7 @@ require('dotenv').config();
 const userRoutes = require('./routes/userRoutes');
 const etablissementRoutes = require('./routes/etablissementRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
+const evenementRoutes = require('./routes/evenementRoutes');
 
 const app = express();
 
@@ -28,7 +29,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api', userRoutes);
 app.use('/api/etablissements', etablissementRoutes);
 app.use('/api/promotions', promotionRoutes);
-
+app.use('/api/evenements', evenementRoutes);
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,

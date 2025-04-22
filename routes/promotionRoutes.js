@@ -36,13 +36,13 @@ const upload = multer({
 router.post('/', upload.array('photos', 5), async (req, res) => {
   try {
     const { name, establishmentId, discount, startDate, endDate, status, type, code, limit, description, conditions } = req.body;
-
+    console.log("body: ",req.body);
     // Récupérer les chemins des photos uploadées
     const photos = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
 
     const promotion = new Promotion({
       name,
-      establishmentId: parseInt(establishmentId),
+      establishmentId,
       discount,
       startDate,
       endDate,
