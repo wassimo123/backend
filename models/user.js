@@ -12,12 +12,13 @@ const userSchema = new mongoose.Schema({
   adresse: { type: String, required: true },
   dateCreation: { type: String, required: true },
   isArchived: { type: Boolean, default: false },
-  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  status: { type: String, enum: ['pending', 'active', 'inactive'], default: 'pending' }, // Statut par défaut 'pending'
   termsAccepted: { type: Boolean, default: false },
   termsAcceptedAt: { type: Date },
   termsVersion: { type: String, default: '1.0' },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
+  role: { type: String, enum: ['Admin', 'Partenaire'], default: 'Partenaire' } // Ajout du champ role
 });
 
 

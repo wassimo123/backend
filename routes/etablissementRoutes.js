@@ -104,6 +104,22 @@ router.get('/id/:id', async (req, res) => {
   }
 });
 
+// Récupérer un établissement par ID (version complète, pour compatibilité)
+router.get('/:id', async (req, res) => {
+  try {
+    const etablissement = await Etablissement.findById(req.params.id);
+    if (!etablissement) {
+      return res.status(404).json({ message: 'Établissement non trouvé' });
+    }
+    if (etablissement.statut !== "Actif") {
+      return res.status(400).json({ message: 'Établissement non actif' });
+    }
+    res.json(etablissement);
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
+  }
+});
+
 router.post('/', upload.array('photos', 10), async (req, res) => {
   try {
     // Get uploaded file paths

@@ -29,7 +29,7 @@ const reseauxSociauxSchema = new mongoose.Schema({
 const etablissementSchema = new mongoose.Schema({
   nom: { type: String, required: true },
   adresse: { type: String, required: true },
-  type: { type: String, required: true, enum: ['Restaurant', 'Hôtel', 'Commerce', 'Café', 'Autre'] },
+  type: { type: String, required: true, enum: ['Restaurant', 'Hôtel',  'Café', ] },
   statut: { type: String, required: true, enum: ['Actif', 'En attente', 'Inactif', 'Archivé'], default: 'Actif' },
   visibility: { type: String, default: 'public', enum: ['public'] },
   codePostal: { type: String },
