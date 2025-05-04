@@ -14,7 +14,7 @@ const evenementSchema = new mongoose.Schema({
   description: { type: String },
   estPublic: { type: Boolean, default: true },
   statut: { type: String, enum: ['À venir', 'En cours', 'Terminé'], required: true },
-  typeEtablissement: { type: String, required: true },
+  // typeEtablissement: { type: String, required: true },
   establishmentId: { type: String, required: true },
   photo: { type: String },
   prix: {

@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Promotion = require('../models/promotion');
+const Etablissement = require('../models/etablissement'); // make sure this is the right model name/path
+
 const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
@@ -60,7 +62,13 @@ router.post('/', upload.array('photos', 5), async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const promotions = await Promotion.find();
-    res.json(promotions);
+    const result = await Promise.all(promotions.map(async promo => {
+    const etablissement = await Etablissement.findById(promo.establishmentId).select('nom');
+    const promoObj = promo.toObject();
+    promoObj.establishmentName = etablissement ? etablissement.nom : null;
+    return promoObj;
+  }));
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
