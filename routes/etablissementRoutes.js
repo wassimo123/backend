@@ -103,6 +103,19 @@ router.get('/id/:id', async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
   }
 });
+////////////houni bedel
+router.get('/valider/:id', async (req, res) => {
+  try {
+    const etablissement = await Etablissement.findById(req.params.id);
+
+    if (!etablissement) {
+      return res.status(404).json({ message: 'Établissement non trouvé' });
+    }
+    res.json(etablissement);
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur serveur', error: err.message });
+  }
+});
 
 // Récupérer un établissement par ID (version complète, pour compatibilité)
 router.get('/:id', async (req, res) => {

@@ -56,8 +56,14 @@ router.post('/', (req, res, next) => {
     const photo = req.file ? `/uploads/${req.file.filename}` : '';
     const { prix, ...otherFields } = req.body;
     const prixData = JSON.parse(prix || '{}');
-    const evenement = new Evenement({ 
-      ...otherFields, 
+
+    // Validate etablissementId exists and is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(otherFields.etablissementId)) {
+      return res.status(400).json({ message: 'L\'ID de l\'établissement n\'est pas valide.' });
+    }
+
+    const evenement = new Evenement({
+      ...otherFields,
       photo,
       prix: {
         estGratuit: prixData.estGratuit || false,
@@ -65,6 +71,12 @@ router.post('/', (req, res, next) => {
       }
     });
     await evenement.save();
+
+    // Populate etablissementId before sending response
+    const populatedEvenement = await Evenement.findById(evenement._id).populate('etablissementId', 'nom type');
+    if (!populatedEvenement) {
+      return res.status(500).json({ message: 'Échec de la récupération des détails de l\'établissement.' });
+    }
 
     // Notify all newsletter subscribers about the new event
     const subscribers = await Newsletter.find({});
@@ -76,7 +88,7 @@ router.post('/', (req, res, next) => {
         <p>Un nouvel événement a été ajouté : <strong>${evenement.nom}</strong>.</p>
         <p><strong>Date:</strong> ${new Date(evenement.dateDebut).toLocaleDateString('fr-FR')}</p>
         <p><strong>Lieu:</strong> ${evenement.lieu}</p>
-        <p>Tu peux le vérifier sur notre site : <a href="http://localhost:4200/evenements">Voir les événements</a></p>
+        <p>Tu peux le vérifier sur notre site : <a href="http://localhost:4200/evenement">Voir les événements</a></p>
         <p>Cordialement,<br>L'équipe de gestion des événements</p>
       `;
 
@@ -90,21 +102,24 @@ router.post('/', (req, res, next) => {
 
     await Promise.all(emailPromises);
 
-    res.status(201).json(evenement);
+    res.status(201).json(populatedEvenement);
   } catch (error) {
-    console.error('Erreur lors de l\'ajout de l\'événement:', error);
-    res.status(400).json({ message: error.message });
+    console.error('Erreur détaillée lors de l\'ajout de l\'événement:', error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 });
 
 // GET: Retrieve all events
 router.get('/', async (req, res) => {
   try {
-    const evenements = await Evenement.find();
+    const evenements = await Evenement.find().populate('etablissementId', 'nom type');
+    if (!evenements || evenements.length === 0) {
+      return res.status(404).json({ message: 'Aucun événement trouvé.' });
+    }
     res.json(evenements);
   } catch (error) {
-    console.error('Erreur lors de la récupération des événements:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Erreur détaillée lors de la récupération des événements:', error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 });
 
@@ -114,14 +129,14 @@ router.get('/:id', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(404).json({ message: 'Événement non trouvé' });
     }
-    const evenement = await Evenement.findById(req.params.id);
+    const evenement = await Evenement.findById(req.params.id).populate('etablissementId', 'nom type');
     if (!evenement) {
       return res.status(404).json({ message: 'Événement non trouvé' });
     }
     res.json(evenement);
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'événement:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Erreur détaillée lors de la récupération de l\'événement:', error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 });
 
@@ -142,8 +157,14 @@ router.put('/:id', (req, res, next) => {
     const photo = req.file ? `/uploads/${req.file.filename}` : evenement.photo;
     const { prix, ...otherFields } = req.body;
     const prixData = JSON.parse(prix || '{}');
-    Object.assign(evenement, { 
-      ...otherFields, 
+
+    // Validate etablissementId exists and is a valid ObjectId
+    if (otherFields.etablissementId && !mongoose.Types.ObjectId.isValid(otherFields.etablissementId)) {
+      return res.status(400).json({ message: 'L\'ID de l\'établissement n\'est pas valide.' });
+    }
+
+    Object.assign(evenement, {
+      ...otherFields,
       photo,
       prix: {
         estGratuit: prixData.estGratuit || false,
@@ -151,10 +172,17 @@ router.put('/:id', (req, res, next) => {
       }
     });
     await evenement.save();
-    res.json(evenement);
+
+    // Populate etablissementId before sending response
+    const populatedEvenement = await Evenement.findById(evenement._id).populate('etablissementId', 'nom type');
+    if (!populatedEvenement) {
+      return res.status(500).json({ message: 'Échec de la récupération des détails de l\'établissement.' });
+    }
+
+    res.json(populatedEvenement);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'événement:', error);
-    res.status(400).json({ message: error.message });
+    console.error('Erreur détaillée lors de la mise à jour de l\'événement:', error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 });
 
@@ -169,8 +197,8 @@ router.patch('/:id/archive', async (req, res) => {
     await evenement.save();
     res.json(evenement);
   } catch (error) {
-    console.error('Erreur lors de l\'archivage de l\'événement:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Erreur détaillée lors de l\'archivage de l\'événement:', error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 });
 
@@ -182,7 +210,7 @@ router.post('/:id/notify', async (req, res) => {
     console.log('Received notification request:', { email, eventId });
 
     // Vérifier si l'événement existe
-    const evenement = await Evenement.findById(eventId);
+    const evenement = await Evenement.findById(eventId).populate('etablissementId', 'nom type');
     if (!evenement) {
       console.log('Event not found for ID:', eventId);
       return res.status(404).json({ message: 'Événement non trouvé' });
@@ -206,11 +234,11 @@ router.post('/:id/notify', async (req, res) => {
     console.log('Notification saved:', notification);
     res.status(201).json({ message: 'Notification enregistrée avec succès' });
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement de la notification:', error);
+    console.error('Erreur détaillée lors de l\'enregistrement de la notification:', error);
     if (error.code === 11000) { // Duplicate key error
       res.status(400).json({ message: 'Vous êtes déjà inscrit pour recevoir une notification pour cet événement.' });
     } else {
-      res.status(400).json({ message: error.message });
+      res.status(500).json({ message: error.message, stack: error.stack });
     }
   }
 });

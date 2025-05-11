@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const evenementSchema = new mongoose.Schema({
@@ -14,8 +15,7 @@ const evenementSchema = new mongoose.Schema({
   description: { type: String },
   estPublic: { type: Boolean, default: true },
   statut: { type: String, enum: ['À venir', 'En cours', 'Terminé'], required: true },
-  // typeEtablissement: { type: String, required: true },
-  establishmentId: { type: String, required: true },
+  etablissementId: { type: mongoose.Schema.Types.ObjectId, ref: 'Etablissement', required: true },
   photo: { type: String },
   prix: {
     estGratuit: { type: Boolean, required: true, default: false },

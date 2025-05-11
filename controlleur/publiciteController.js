@@ -4,30 +4,37 @@ const User = require('../models/user'); // Make sure this exists
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 
-// ➕ Créer une publicité
+
 exports.createPublicite = async (req, res) => {
   try {
-    const { etablissement: etabData, publicite: pubData } = req.body;
+    const etablissementId = req.body['etablissementId'];
+    const utilisateurId = req.body['utilisateurId'];
+    const description = req.body['description'];
+    const pack = req.body['pack'];
 
-    // 1. Enregistrer l'établissement
-    etabData.statut = 'En attente';
-    //etabDat.userId = req.user._id;
-    const etablissement = new Etablissement(etabData);
-    await etablissement.save();
-    // 2. Créer la publicité avec l'ID de l'établissement
+    // Vérifier que l'établissement a été déjà ajouté
+    const etablissement = await Etablissement.findById(etablissementId);
+    if (!etablissement) {
+      return res.status(404).json({ message: "Établissement introuvable." });
+    }
+
+    // Créer la publicité liée à l'établissement existant
     const publicite = new Publicite({
-    ...pubData,
-    etablissementId: etablissement._id,
-    nom: etablissement.nom,
-    typeEtablissement: etablissement.type
+      etablissementId,
+      utilisateurId,
+      description,
+      pack,
+      nom: etablissement.nom,
+      typeEtablissement: etablissement.type
     });
 
     await publicite.save();
 
+    res.status(201).json({ message: "Publicité créée avec succès.", publicite });
 
-    res.status(201).json({ message: 'Publicité créée avec succès', publicite });
   } catch (err) {
-    res.status(500).json({ message: 'Erreur lors de la création', error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de la création", error: err.message });
   }
 };
 
