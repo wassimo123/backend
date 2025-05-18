@@ -6,4 +6,4 @@ const privacySchema = new mongoose.Schema({
   lastUpdated: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Privacy', privacySchema);
+module.exports = mongoose.model('Privacy', privacySchema, 'privacies' );

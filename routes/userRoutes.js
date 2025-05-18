@@ -10,48 +10,14 @@ const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 require('dotenv').config();
 const EvaluationSite = require('../models/EvaluationSite');
-
+const Notification = require('../models/notification');
 // Fonction utilitaire pour vérifier le nombre d'admins
 const checkAdminLimit = async () => {
   const adminCount = await User.countDocuments({ role: 'Admin' });
   return adminCount;
 };
 
-// Route pour changer le mot de passe
-// router.post('/change-password', authMiddleware, async (req, res) => {
-//   const { currentPassword, newPassword, confirmPassword } = req.body;
-//   const userId = req.user.id; // Récupéré depuis le token via authMiddleware
 
-//   if (!currentPassword || !newPassword || !confirmPassword) {
-//     return res.status(400).json({ message: 'Veuillez fournir tous les champs requis.' });
-//   }
-
-//   if (newPassword !== confirmPassword) {
-//     return res.status(400).json({ message: 'Les nouveaux mots de passe ne correspondent pas.' });
-//   }
-
-//   try {
-//     const user = await User.findById(userId);
-//     if (!user) {
-//       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-//     }
-
-//     // Vérifier si l'ancien mot de passe est correct
-//     if (currentPassword !== user.password) {
-//       return res.status(401).json({ message: 'Mot de passe actuel incorrect.' });
-//     }
-
-//     // Mettre à jour le mot de passe
-//     user.password = newPassword;
-//     user.confirmPassword = newPassword;
-//     await user.save();
-
-//     res.status(200).json({ message: 'Mot de passe changé avec succès.' });
-//   } catch (error) {
-//     console.error('Erreur lors du changement de mot de passe:', error);
-//     res.status(500).json({ message: 'Erreur serveur.', error });
-//   }
-// });
 ////evaliation
 router.post('/avis', async (req, res) => {
   let { utilisateur, note, commentaire } = req.body;
@@ -213,40 +179,18 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Vérifier si un utilisateur existe par e-mail
+
 router.get('/users/check-email/:email', authMiddleware, async (req, res) => {
+  console.log(`Checking email: ${req.params.email}`);
   try {
     const user = await User.findOne({ email: req.params.email });
-    if (!user) {
-      return res.status(404).json({ exists: false });
-    }
-    res.json({ exists: true, status: user.status });
+    res.json({ exists: !!user, status: user ? user.status : undefined });
   } catch (error) {
     console.error('Erreur lors de la vérification de l\'e-mail:', error);
     res.status(500).json({ message: 'Erreur serveur.', error });
   }
 });
 
-// Nouvelle route pour récupérer un utilisateur par email
-// router.get('/users/email/:email', authMiddleware, async (req, res) => {
-//   try {
-//     const user = await User.findOne({ email: req.params.email });
-//     if (!user) {
-//       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-//     }
-//     res.json({
-//       id: user._id,
-//       email: user.email,
-//       nom: user.nom,
-//       prenom: user.prenom,
-//       role: user.role,
-//       status: user.status
-//     });
-//   } catch (error) {
-//     console.error('Erreur lors de la récupération de l\'utilisateur:', error);
-//     res.status(500).json({ message: 'Erreur serveur.', error });
-//   }
-// });
 router.get('/users/email/:email', authMiddleware, async (req, res) => {
   try {
     const user = await User.findOne({ email: req.params.email });
@@ -298,6 +242,8 @@ router.delete('/users/:email', authMiddleware, async (req, res) => {
   try {
     // Supprimer les activités associées à l'utilisateur
     await Activity.deleteMany({ email: req.params.email });
+    await Notification.deleteMany({ email: req.params.email });
+    ////houni
 
     // Supprimer l'utilisateur
     const deletedUser = await User.findOneAndDelete({ email: req.params.email });
@@ -457,16 +403,26 @@ router.post('/login', async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
+
+    if (!user || password !== user.password) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
     }
 
-    if (password !== user.password) {
-      return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
+    // Gestion des statuts
+    if (user.status === 'pending') {
+      return res.status(403).json({ message: 'Votre compte est en attente de validation par l\'administrateur.' });
+    }
+
+    if (user.status === 'inactive') {
+      return res.status(403).json({ message: 'Votre compte est désactivé. Veuillez contacter l\'administrateur.' });
+    }
+
+    if (user.status === 'archived') {
+      return res.status(403).json({ message: 'Votre compte a été archivé.' });
     }
 
     if (user.status !== 'active') {
-      return res.status(403).json({ message: 'Compte inactif. Veuillez contacter l\'administrateur.' });
+      return res.status(403).json({ message: 'Statut de compte invalide.' });
     }
 
     const token = jwt.sign(
@@ -474,17 +430,21 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-    console.log('Token généré dans /api/login :', token);
 
     const latestTerms = await Terms.findOne().sort({ lastUpdated: -1 });
     if (!latestTerms) {
       return res.status(500).json({ message: 'Erreur: Aucune version des conditions d\'utilisation trouvée.' });
     }
 
-    if (user.termsVersion !== latestTerms.version) {
+    if (user.termsVersion !== latestTerms.version&& !process.env.TEST_MODE !== 'true') {
       return res.status(403).json({
         message: 'Nouvelles conditions d\'utilisation à accepter.',
-        user: { id: user._id, email: user.email, nom: user.nom, prenom: user.prenom },
+        user: {
+          id: user._id,
+          email: user.email,
+          nom: user.nom,
+          prenom: user.prenom,
+        },
         latestTerms: {
           version: latestTerms.version,
           content: latestTerms.content,
@@ -494,16 +454,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Log pour vérifier les données renvoyées
-    console.log('Utilisateur renvoyé dans la réponse:', {
-      id: user._id,
-      email: user.email,
-      nom: user.nom,
-      prenom: user.prenom,
-      role: user.role,
-      status: user.status
-    });
-
     res.status(200).json({
       message: 'Connexion réussie.',
       user: {
@@ -512,14 +462,17 @@ router.post('/login', async (req, res) => {
         nom: user.nom,
         prenom: user.prenom,
         role: user.role,
-        status: user.status
+        status: user.status,
       },
       token,
     });
   } catch (error) {
+    console.error('Erreur dans /api/login :', error);
     res.status(500).json({ message: 'Erreur serveur.', error });
   }
 });
+
+
 
 // Autres routes
 router.post('/accept-terms', authMiddleware, async (req, res) => {
@@ -638,49 +591,7 @@ router.post('/users', async (req, res) => {
   }
 });
 
-// router.put('/users/matricule/:matricule', async (req, res) => {
-//   try {
-//     const { password, confirmPassword, role, ...userData } = req.body;
 
-//     if (password && confirmPassword) {
-//       if (password !== confirmPassword) {
-//         return res.status(400).json({ message: 'Les mots de passe ne correspondent pas' });
-//       }
-//       userData.password = password;
-//       userData.confirmPassword = confirmPassword;
-//     }
-
-//     // Vérifier la limite d'admins si le rôle est mis à jour en "Admin"
-//     if (role === 'Admin') {
-//       const adminCount = await checkAdminLimit();
-//       if (adminCount >= 1) {
-//         const existingUser = await User.findOne({ matriculeFiscale: req.params.matricule });
-//         if (existingUser && existingUser.role !== 'Admin') {
-//           return res.status(400).json({ message: 'Il ne peut y avoir qu\'un seul administrateur.' });
-//         }
-//       }
-//     }
-
-//     const updatedUser = await User.findOneAndUpdate(
-//       { matriculeFiscale: req.params.matricule },
-//       { ...userData, role: role || 'Partenaire' },
-//       { new: true }
-//     );
-//     if (!updatedUser) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-
-//     // Enregistrer l'activité
-//     const activity = new Activity({
-//       type: 'updated',
-//       email: updatedUser.email,
-//       time: new Date(),
-//     });
-//     await activity.save();
-
-//     res.json(updatedUser);
-//   } catch (error) {
-//     res.status(500).json({ message: 'Erreur serveur', error });
-//   }
-// });
 router.put('/users/matricule/:matricule', authMiddleware, async (req, res) => {
   try {
     const user = await User.findOneAndUpdate(

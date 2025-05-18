@@ -166,25 +166,47 @@ router.post('/', upload.array('photos', 10), async (req, res) => {
 });
 
 // Mettre à jour un établissement (mise à jour complète)
-router.put('/:id', async (req, res) => {
+router.put('/:id', upload.array('photos', 10), async (req, res) => {
   try {
-    const etablissement = await Etablissement.findByIdAndUpdate(
+    let photoPaths = [];
+
+    // Garder les anciennes photos (chemins)
+    const existingPhotos = req.body.existingPhotos;
+    if (existingPhotos) {
+      if (Array.isArray(existingPhotos)) {
+        photoPaths = existingPhotos;
+      } else {
+        photoPaths = [existingPhotos];
+      }
+    }
+
+    // Ajouter les nouvelles photos uploadées
+    if (req.files && req.files.length > 0) {
+      const uploadedPaths = req.files.map(file => file.path);
+      photoPaths.push(...uploadedPaths);
+    }
+
+    const updateData = {
+      ...req.body,
+      photos: photoPaths
+    };
+
+    const updated = await Etablissement.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      updateData,
       { new: true, runValidators: true }
     );
-    if (!etablissement) {
+
+    if (!updated) {
       return res.status(404).json({ message: 'Établissement non trouvé' });
     }
-    res.json(etablissement);
+
+    res.json(updated);
   } catch (err) {
-    if (err.name === 'ValidationError') {
-      const errors = Object.values(err.errors).map((e) => e.message);
-      return res.status(400).json({ message: 'Erreur de validation', errors });
-    }
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
   }
 });
+
 
 // Archiver un établissement (mise à jour partielle avec PATCH)
 router.patch('/:id', async (req, res) => {

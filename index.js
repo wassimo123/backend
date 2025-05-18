@@ -12,6 +12,8 @@ const scheduleNotifications = require('./utils/scheduleNotifications');
 const newsletterRoutes = require('./routes/newsletterRoutes');
 const scheduleEventStatusUpdates = require('./utils/scheduleEventStatus');
 const publiciteRoutes = require('./routes/publiciteRoutes');
+const promotionNotifyRoutes = require('./routes/promotionNotify.route');
+const schedulePromoNotifications = require('./utils/schedulePromoNotifications');
 
 
 const app = express();
@@ -25,7 +27,8 @@ if (!fs.existsSync(uploadsDir)) {
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(cors({ origin: 'http://localhost:4200' }));
+app.use(cors({ origin: 'http://localhost:4200',methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'] }));
 
 // Servir les fichiers statiques (photos) depuis le dossier uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -37,10 +40,11 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/evenements', evenementRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/publicites', publiciteRoutes);
-
+app.use('/api/promotions', promotionNotifyRoutes);
 // Démarrer la tâche planifiée pour les notifications
 scheduleNotifications();
 scheduleEventStatusUpdates();
+schedulePromoNotifications();
 
 
 mongoose.connect(process.env.MONGO_URI)

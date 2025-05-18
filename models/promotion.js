@@ -6,10 +6,7 @@ const promotionSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  establishmentId: {
-    type: String,
-    required: true
-  },
+  etablissementId: { type: mongoose.Schema.Types.ObjectId, ref: 'Etablissement', required: true },
   discount: {
     type: String,
     required: true
@@ -24,7 +21,7 @@ const promotionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'scheduled', 'expired', 'pending'], // Changé 'draft' en 'pending'
+    enum: ['active', 'expired', 'pending'],
     required: true
   },
   type: {
@@ -44,9 +41,15 @@ const promotionSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  photos: [{
-    type: String // Stocke les chemins ou URLs des photos (ex: /uploads/fichier.jpg)
-  }],
+  photo: { type: String },
+  prixAvant: {
+    type: Number,
+    default: null
+  },
+  prixApres: {
+    type: Number,
+    default: null
+  },
   conditions: {
     minPurchase: {
       type: Boolean,
@@ -61,12 +64,12 @@ const promotionSchema = new mongoose.Schema({
       default: false
     },
     specificItems: {
-      type: Boolean,
-      default: false
+      type: [String],
+      default: []
     },
     specificDays: {
-      type: Boolean,
-      default: false
+      type: [String],
+      default: []
     },
     days: {
       type: Map,
