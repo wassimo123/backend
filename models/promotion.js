@@ -76,9 +76,12 @@ const promotionSchema = new mongoose.Schema({
       of: Boolean,
       default: {}
     }
+    
   }
+  
 }, {
   timestamps: true // Ajoute createdAt et updatedAt automatiquement
 });
+
 
 module.exports = mongoose.model('Promotion', promotionSchema);

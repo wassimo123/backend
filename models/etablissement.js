@@ -36,6 +36,10 @@ const etablissementSchema = new mongoose.Schema({
   ville: { type: String },
   pays: { type: String, default: 'Tunisie' },
   showMap: { type: Boolean, default: false },
+  coordinates: {
+    type: [Number], // [longitude, latitude]
+    required: true
+  },
   telephone: { type: String, default: '' },
   email: { type: String, default: '' },
   siteWeb: { type: String, default: '' },

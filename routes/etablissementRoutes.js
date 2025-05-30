@@ -103,7 +103,7 @@ router.get('/id/:id', async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur', error: err.message });
   }
 });
-////////////houni bedel
+////////////
 router.get('/valider/:id', async (req, res) => {
   try {
     const etablissement = await Etablissement.findById(req.params.id);
@@ -139,11 +139,16 @@ router.post('/', upload.array('photos', 10), async (req, res) => {
     const photoPaths = req.files ? req.files.map(file => file.path) : [];
     
     // Create new etablissement with form data and photo paths
+    //console.log("website: ",req.body);
     const etablissementData = {
       ...req.body,
       photos: photoPaths
     };
-    
+    if (typeof etablissementData.coordinates === 'string') {
+      const [lat, lng] = etablissementData.coordinates.split(',').map(coord => parseFloat(coord.trim()));
+      etablissementData.coordinates = [lat, lng];
+    }    
+    //console.log("etab Data: ",etablissementData.coordinates);
     const etablissement = new Etablissement(etablissementData);
     const savedEtablissement = await etablissement.save();
     
@@ -190,7 +195,10 @@ router.put('/:id', upload.array('photos', 10), async (req, res) => {
       ...req.body,
       photos: photoPaths
     };
-
+    if (typeof updateData.coordinates === 'string') {
+      const [lat, lng] = updateData.coordinates.split(',').map(coord => parseFloat(coord.trim()));
+      updateData.coordinates = [lat, lng];
+    }
     const updated = await Etablissement.findByIdAndUpdate(
       req.params.id,
       updateData,

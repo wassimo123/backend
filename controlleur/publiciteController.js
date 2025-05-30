@@ -7,6 +7,7 @@ const PDFDocument = require('pdfkit');
 
 exports.createPublicite = async (req, res) => {
   try {
+    //console.log("website: ", req.body);
     const etablissementId = req.body['etablissementId'];
     const utilisateurId = req.body['utilisateurId'];
     const description = req.body['description'];
@@ -42,7 +43,7 @@ exports.createPublicite = async (req, res) => {
 exports.getAllPublicites = async (req, res) => {
     try {
       const publicites = await Publicite.find()
-        .populate('etablissementId') // ✅ Populate établissement data
+        .populate('etablissementId') //  Populate établissement data
         .sort({ createdAt: -1 });
   
       // Optional: Rename populated field to `etablissement` for clarity
@@ -60,7 +61,7 @@ exports.getAllPublicites = async (req, res) => {
   };
   
 
-// 🔍 Récupérer une publicité par ID
+//  Récupérer une publicité par ID
 exports.getPubliciteById = async (req, res) => {
     try {
       const pub = await Publicite.findById(req.params.id)
@@ -80,7 +81,7 @@ exports.getPubliciteById = async (req, res) => {
     }
   };
 
-// ✏️ Modifier le statut (acceptée / refusée)
+//  Modifier le statut (acceptée / refusée)
 exports.updateStatut = async (req, res) => {
   try {
     const { statut } = req.body;
@@ -225,7 +226,7 @@ exports.deletePublicite = async (req, res) => {
       
       doc.moveDown(2);
       
-      // 🗂️ Bloc d'informations
+      //  Bloc d'informations
       doc.fillColor('black').fontSize(12);
       doc.rect(50, 70, 500, 100).stroke();
       doc.text(`Date : ${new Date().toLocaleDateString()}`, 60, 80);
@@ -234,7 +235,7 @@ exports.deletePublicite = async (req, res) => {
       doc.text(`Téléphone : ${etablissement.telephone || '---'}`, 60, 140);
       doc.text(`Email : ${user.email}`, 300, 140);
       
-      // 🧾 Détails du pack
+      //  Détails du pack
       doc.moveDown(3);
       doc.fontSize(14).fillColor('black').text('Détails du Pack Choisi', { underline: true });
       
@@ -244,7 +245,7 @@ exports.deletePublicite = async (req, res) => {
       doc.text(`Durée : ${publicite.pack === 'Basique' ? '1 Mois' : publicite.pack === 'Standard' ? '3 Mois' : '6 Mois'}`);
       doc.text(`Prix : ${selectedPrice} TND`);
       
-      // 📝 Description
+      //  Description
       doc.moveDown();
       doc.fontSize(12).text(`Description : ${publicite.description || 'Aucune'}`);
       
@@ -266,7 +267,7 @@ exports.deletePublicite = async (req, res) => {
 
 
 
-// 🔍 Récupérer les publicités d’un partenaire
+//  Récupérer les publicités d’un partenaire
 exports.getPublicitesByUser = async (req, res) => {
   try {
     const publicites = await Publicite.find({ utilisateurId: req.params.utilisateurId }).sort({ createdAt: -1 });

@@ -14,6 +14,8 @@ const scheduleEventStatusUpdates = require('./utils/scheduleEventStatus');
 const publiciteRoutes = require('./routes/publiciteRoutes');
 const promotionNotifyRoutes = require('./routes/promotionNotify.route');
 const schedulePromoNotifications = require('./utils/schedulePromoNotifications');
+const searchRoutes = require('./routes/searchRoutes');
+const suggestionsRoutes = require('./routes/suggestionsRoutes');
 
 
 const app = express();
@@ -41,6 +43,9 @@ app.use('/api/evenements', evenementRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/publicites', publiciteRoutes);
 app.use('/api/promotions', promotionNotifyRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/suggestions', suggestionsRoutes);
+
 // Démarrer la tâche planifiée pour les notifications
 scheduleNotifications();
 scheduleEventStatusUpdates();
