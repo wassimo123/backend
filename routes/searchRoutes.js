@@ -13,60 +13,39 @@ const uploadsDir = path.join(__dirname, '../Uploads'); // Adjust if folder name 
 const getImageUrl = async (item, type) => {
   const extensions = ['.jpg', '.png', '.jpeg'];
 
-  // Log item details for debugging
-  console.log(`Processing ${type} ID ${item._id}:`, {
-    photo: item.photo,
-    photos: item.photos,
-  });
-
-  // Check stored image path from database
   try {
     if (type === 'promotion' || type === 'evenement') {
-      if (typeof item.photo === 'string' && item.photo.includes('Uploads')) {
-        const imagePath = item.photo.replace(/^\/?Uploads[\\/]/, '');
+      if (typeof item.photo === 'string' && item.photo.toLowerCase().includes('uploads')) {
+        const imagePath = item.photo.replace(/^\/?uploads[\\/]/i, '');
         const fullPath = path.join(uploadsDir, imagePath);
         await fs.access(fullPath);
-        return `${baseUrl}/Uploads/${imagePath}`;
+        return `${baseUrl}/uploads/${imagePath}`;
       } else {
-        console.log(`Invalid or missing photo field for ${type} ID ${item._id}:`, item.photo);
+        console.log(`Champ photo invalide pour ${type} ID ${item._id}:`, item.photo);
       }
     } else if (type === 'etablissement') {
-      if (Array.isArray(item.photos) && item.photos.length > 0 && typeof item.photos[0] === 'string' && item.photos[0].includes('Uploads')) {
-        const imagePath = item.photos[0].replace(/^\/?Uploads[\\/]/, '');
+      if (Array.isArray(item.photos) && item.photos.length > 0 && typeof item.photos[0] === 'string' && item.photos[0].toLowerCase().includes('uploads')) {
+        const imagePath = item.photos[0].replace(/^\/?uploads[\\/]/i, '');
         const fullPath = path.join(uploadsDir, imagePath);
         await fs.access(fullPath);
-        return `${baseUrl}/Uploads/${imagePath}`;
+        return `${baseUrl}/uploads/${imagePath}`;
       } else {
-        console.log(`Invalid or missing photos field for ${type} ID ${item._id}:`, item.photos);
+        console.log(`Champ photos invalide pour ${type} ID ${item._id}:`, item.photos);
       }
     }
   } catch (err) {
-    console.error(`Error accessing stored image for ${type} ID ${item._id}:`, err.message);
+    console.error(`Erreur d'accès au fichier image pour ${type} ID ${item._id}:`, err.message);
   }
 
-  // Skip _id-based fallback if no _id-based images are expected
-  // Comment out or remove if you plan to add _id-based images later
-  /*
-  try {
-    for (const ext of extensions) {
-      const idImagePath = path.join(uploadsDir, `${item._id}${ext}`);
-      await fs.access(idImagePath);
-      return `${baseUrl}/Uploads/${item._id}${ext}`;
-    }
-  } catch (err) {
-    console.error(`Error accessing _id-based image for ${type} ID ${item._id}:`, err.message);
-  }
-  */
-
-  // Fallback to default image based on type
+  // Image par défaut
   const defaultImages = {
     promotion: 'default-promotion.jpg',
     etablissement: 'default-etablissement.jpg',
     evenement: 'default-evenement.jpg',
   };
   const defaultImage = defaultImages[type] || 'default.jpg';
-  console.log(`Using default image for ${type} ID ${item._id}: ${defaultImage}`);
-  return `${baseUrl}/Uploads/${defaultImage}`;
+  console.log(`Image par défaut utilisée pour ${type} ID ${item._id}: ${defaultImage}`);
+  return `${baseUrl}/uploads/${defaultImage}`;
 };
 
 router.get('/', async (req, res) => {
@@ -96,19 +75,44 @@ router.get('/', async (req, res) => {
     let evenements = [];
 
     const promotionQuery = {
-      $or: [
-        { name: searchRegex },
-        { description: searchRegex },
-        { code: searchRegex },
-      ],
+      $and: [
+        { status: { $regex: /^active$/i } },
+        {
+          $or: [
+            { name: searchRegex },
+            { description: searchRegex },
+            { code: searchRegex }
+          ]
+        }
+      ]
     };
+    
+    
     const etablissementQuery = {
-      $or: [{ nom: searchRegex }, { description: searchRegex }],
+      $and: [
+        { statut: { $regex: /^actif$/i } },  // Insensible à la casse
+        {
+          $or: [
+            { nom: searchRegex },
+            { description: searchRegex }
+          ]
+        }
+      ]
     };
+    
     const evenementQuery = {
-      $or: [{ titre: searchRegex }, { description: searchRegex }],
+      $and: [
+        { statut: { $regex: /^À venir$/i } },  // Match exact (insensible à la casse)
+        {
+          $or: [
+            { titre: searchRegex },
+            { description: searchRegex }
+          ]
+        }
+      ]
     };
-
+    
+    
     let sortOption = {};
     if (sort === 'newest') {
       sortOption = { createdAt: -1 };
@@ -172,10 +176,11 @@ router.get('/', async (req, res) => {
       etablissements.map(async (e) => {
         try {
           return {
+            
             title: e.nom,
             description: e.description || 'Aucune description',
             type: e.type.charAt(0).toUpperCase() + e.type.slice(1),
-            link: `/etablissements/${e.type}/${e._id}`,
+            link: `/etablissements/${e._id}`,
             createdAt: e.createdAt,
             image: await getImageUrl(e, 'etablissement'),
           };
@@ -190,10 +195,11 @@ router.get('/', async (req, res) => {
       evenements.map(async (e) => {
         try {
           return {
-            title: e.titre,
+            
+            title: e.nom || e.titre || 'Événement',
             description: e.description || 'Aucune description',
             type: 'Événement',
-            link: `/evenement/${e._id}`,
+            link: `/evenements/${e._id}`, 
             createdAt: e.date || e.createdAt,
             image: await getImageUrl(e, 'evenement'),
           };
